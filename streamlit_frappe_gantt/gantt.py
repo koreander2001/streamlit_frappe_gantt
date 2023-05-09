@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, Optional
 
 from streamlit.components.v1.components import declare_component
 
@@ -31,19 +32,34 @@ class GanttTask:
         }
 
 
+class GanttComponentEvent(str, Enum):
+    UPDATE = "UPDATE"
+
+
+@dataclass(frozen=True)
+class GanttComponentResult:
+    task: GanttTask
+    event: GanttComponentEvent
+
+
 def gantt_component(
     tasks: Iterable[GanttTask],
     key: Optional[str] = None,
-) -> List[GanttTask]:
-    tasks_json = list(map(GanttTask.to_json, tasks))
-
+) -> Optional[GanttComponentResult]:
     component_func = declare_component(
         "gantt_component",
         path=str(Path(__file__).parent / "frontend" / "build"),
     )
-    component_result = component_func(tasks=tasks_json, key=key)
 
-    if component_result is None:
-        return list(tasks)
+    component_result: Dict = component_func(
+        key=key,
+        tasks=list(map(GanttTask.to_json, tasks)),
+    )
+
+    if component_result:
+        return GanttComponentResult(
+            task=GanttTask.from_json(component_result["task"]),
+            event=GanttComponentEvent(component_result["event"]),
+        )
     else:
-        return list(map(GanttTask.from_json, component_result))
+        return None
