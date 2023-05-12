@@ -17,12 +17,7 @@ const DATE_FORMAT = 'yyyy-MM-dd HH:mm';
 export const TaskForm = (props: TaskFormProps): JSX.Element => {
     const { task, onSubmit } = props;
 
-    const {
-        register,
-        handleSubmit,
-        getValues,
-        formState: { errors },
-    } = useForm<TaskFormData>({
+    const { register, handleSubmit } = useForm<TaskFormData>({
         defaultValues: {
             start: format(fromUnixTime(task.startUnixTime), DATE_FORMAT),
             end: format(fromUnixTime(task.endUnixTime), DATE_FORMAT),
@@ -30,9 +25,6 @@ export const TaskForm = (props: TaskFormProps): JSX.Element => {
     });
 
     const onValid = (data: TaskFormData) => {
-        console.log(data);
-        console.log(getValues());
-
         const updatedTask: TaskInterface = {
             id: task.id,
             name: task.name,

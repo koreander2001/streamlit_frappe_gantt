@@ -38,14 +38,6 @@ def init_session_state() -> None:
         ]
 
 
-def find_task_index_by_id(tasks: List[Task], id: int) -> int:
-    for i, task in enumerate(tasks):
-        if task.id == id:
-            return i
-    else:
-        return -1
-
-
 def update_task(updated_task: Task) -> None:
     tasks: List[Task] = st.session_state["tasks"]
 
@@ -53,8 +45,8 @@ def update_task(updated_task: Task) -> None:
     for i, _task in enumerate(tasks):
         if _task.id == updated_task.id:
             task_index = i
-
-    if task_index is None:
+            break
+    else:
         raise ValueError(f"Not found task: {updated_task}")
 
     tasks[task_index] = updated_task
@@ -68,6 +60,7 @@ def main() -> None:
     updated_task = gantt_component(st.session_state["tasks"])
     if updated_task:
         update_task(updated_task)
+        st.experimental_rerun()  # tasksの更新後にガントチャートの表示を更新させたいため
 
     task_df = pd.DataFrame(st.session_state["tasks"]).set_index("id")
     st.dataframe(task_df)

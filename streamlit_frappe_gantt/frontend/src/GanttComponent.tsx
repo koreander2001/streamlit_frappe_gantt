@@ -10,25 +10,15 @@ import { TaskForm } from './TaskForm';
 const GanttComponent = (props: ComponentProps): JSX.Element => {
     const { args } = props;
 
-    const [tasks, setTasks] = useState<TaskInterface[]>(args['tasks']);
     const [clickedTask, setClickedTask] = useState<TaskInterface | null>(null);
 
     useEffect(Streamlit.setFrameHeight);
 
-    const onUpdateTask = (updatedTask: TaskInterface): void => {
-        // 元のtasksを直接変更してしまわないため、新たなリストを生成して設定
-        const copiedTasks = tasks.map((task) => ({ ...task }));
-        const taskIndex = tasks.findIndex((task) => task.id === updatedTask.id);
-        copiedTasks[taskIndex] = { ...updatedTask };
-        setTasks(copiedTasks);
-
-        Streamlit.setComponentValue(updatedTask);
-    };
-
     const ClickedTaskForm = (): JSX.Element | null => {
         const onSubmit = (updatedTask: TaskInterface): void => {
             setClickedTask(null);
-            onUpdateTask(updatedTask);
+            Streamlit.setComponentValue(updatedTask);
+            console.log('onSubmit');
         };
 
         if (clickedTask) {
@@ -41,9 +31,9 @@ const GanttComponent = (props: ComponentProps): JSX.Element => {
     return (
         <>
             <FrappeGantt
-                tasks={tasks}
+                tasks={args['tasks']}
                 onClickTask={setClickedTask}
-                onUpdateTask={onUpdateTask}
+                onUpdateTask={Streamlit.setComponentValue}
             />
             <ClickedTaskForm />
         </>
