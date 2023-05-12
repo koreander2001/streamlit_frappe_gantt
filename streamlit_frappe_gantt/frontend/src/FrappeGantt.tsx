@@ -1,11 +1,12 @@
-import { useEffect, useRef } from "react";
-import Gantt from "./frappe/gantt";
+import { format, fromUnixTime, getUnixTime } from 'date-fns';
+import { useEffect, useRef } from 'react';
+import Gantt from './frappe/gantt';
 
 export interface TaskInterface {
     id: number;
     name: string;
-    start_unix_time: number;
-    end_unix_time: number;
+    startUnixTime: number;
+    endUnixTime: number;
 }
 
 interface FrappeGanttTask {
@@ -23,65 +24,60 @@ interface FrappeGanttInitializedTask extends FrappeGanttTask {
 
 interface FrappeGanttProps {
     tasks: TaskInterface[];
-    on_update_task: (updated_task: TaskInterface) => void;
+    onClickTask: (clickedTask: TaskInterface) => void;
+    onUpdateTask: (updatedTask: TaskInterface) => void;
 }
 
-const task_interface_to_frappe_gantt_task = (task: TaskInterface): FrappeGanttTask => {
+const convertToFrappeGanttTask = (task: TaskInterface): FrappeGanttTask => {
     return {
         id: task.id.toString(),
         name: task.name,
-        start: new Date(task.start_unix_time * 1000),
-        end: new Date(task.end_unix_time * 1000),
+        start: fromUnixTime(task.startUnixTime),
+        end: fromUnixTime(task.endUnixTime),
         progress: 100,
     };
 };
 
-const frappe_gantt_task_to_task_interface = (task: FrappeGanttInitializedTask): TaskInterface => {
+const convertToTaskInterface = (
+    task: FrappeGanttInitializedTask
+): TaskInterface => {
     return {
         id: Number(task.id),
         name: task.name,
-        start_unix_time: task._start.getTime() / 1000,
-        end_unix_time: task._end.getTime() / 1000,
+        startUnixTime: getUnixTime(task._start),
+        endUnixTime: getUnixTime(task._end),
     };
 };
 
 export const FrappeGantt = (props: FrappeGanttProps): JSX.Element => {
-    const { tasks, on_update_task } = props;
+    const { tasks, onClickTask, onUpdateTask } = props;
 
-    const gantt_tag = useRef<HTMLDivElement>(null!);
+    const ganttTag = useRef<HTMLDivElement>(null!);
 
     useEffect(() => {
-        const gantt_tasks: FrappeGanttTask[] = tasks.map(task_interface_to_frappe_gantt_task);
-
-        new Gantt(gantt_tag.current, gantt_tasks, {
-			view_mode: 'Hour',
-			language: 'en',
+        const ganttTasks = tasks.map(convertToFrappeGanttTask);
+        new Gantt(ganttTag.current, ganttTasks, {
+            view_mode: 'Hour',
+            language: 'en',
             on_click: (task: FrappeGanttInitializedTask) => {
+                onClickTask(convertToTaskInterface(task));
             },
             on_date_change: (task: FrappeGanttInitializedTask) => {
-                on_update_task(frappe_gantt_task_to_task_interface(task));
+                onUpdateTask(convertToTaskInterface(task));
             },
-			custom_popup_html: (task: FrappeGanttInitializedTask) => {
-				const date_to_string = (date: Date) => {
-					const _date = new Date(date.getTime() - date.getTimezoneOffset() * 60 * 1000);
-					return _date.toISOString().replace('T', ' ').slice(0, 16);
-				};
-
+            custom_popup_html: (task: FrappeGanttInitializedTask) => {
+                const DATE_FORMAT = 'yyyy-MM-dd HH:mm';
                 return `
 					<div class="title">${task.name}</div>
     		        <div class="subtitle">
-						<div style="white-space: nowrap;">${date_to_string(task._start)}</div>
+						<div style="white-space: nowrap;">${format(task._start, DATE_FORMAT)}</div>
 						<div style="text-align: center;">~</div>
-						<div style="white-space: nowrap;">${date_to_string(task._end)}</div>
+						<div style="white-space: nowrap;">${format(task._end, DATE_FORMAT)}</div>
 					</div>
 				`;
-			},
+            },
         });
     });
 
-    return (
-        <>
-            <div ref={gantt_tag}></div>
-        </>
-    );
+    return <div ref={ganttTag}></div>;
 };

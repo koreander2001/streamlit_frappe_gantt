@@ -1,46 +1,53 @@
-import { useEffect, useState } from "react";
-import { ComponentProps, Streamlit, withStreamlitConnection } from "streamlit-component-lib";
-import { FrappeGantt, TaskInterface } from "./FrappeGantt";
-
-const GanttComponentEvent = {
-  UPDATE: 'UPDATE',
-} as const;
-type GanttComponentEvent = typeof GanttComponentEvent[keyof typeof GanttComponentEvent];
-
-interface GanttComponentResult {
-  task: TaskInterface;
-  event: GanttComponentEvent;
-}
+import { useEffect, useState } from 'react';
+import {
+    ComponentProps,
+    Streamlit,
+    withStreamlitConnection,
+} from 'streamlit-component-lib';
+import { FrappeGantt, TaskInterface } from './FrappeGantt';
+import { TaskForm } from './TaskForm';
 
 const GanttComponent = (props: ComponentProps): JSX.Element => {
-  const { args } = props;
+    const { args } = props;
 
-  const [tasks, setTasks] = useState<TaskInterface[]>(args['tasks']);
+    const [tasks, setTasks] = useState<TaskInterface[]>(args['tasks']);
+    const [clickedTask, setClickedTask] = useState<TaskInterface | null>(null);
 
-  useEffect(Streamlit.setFrameHeight);
+    useEffect(Streamlit.setFrameHeight);
 
-  const on_update_task = (updatedTask: TaskInterface): void => {
-    // 元のtasksを直接変更してしまわないため、新たなリストを生成して設定
-    const copyTasks = tasks.map(task => ({ ...task }));
-    const taskIndex = tasks.findIndex(task => task.id === updatedTask.id);
-    copyTasks[taskIndex] = { ...updatedTask };
-    setTasks(copyTasks);
+    const onUpdateTask = (updatedTask: TaskInterface): void => {
+        // 元のtasksを直接変更してしまわないため、新たなリストを生成して設定
+        const copiedTasks = tasks.map((task) => ({ ...task }));
+        const taskIndex = tasks.findIndex((task) => task.id === updatedTask.id);
+        copiedTasks[taskIndex] = { ...updatedTask };
+        setTasks(copiedTasks);
 
-    const result: GanttComponentResult = {
-      task: updatedTask,
-      event: GanttComponentEvent.UPDATE,
-    }
-    Streamlit.setComponentValue(result);
-  };
+        Streamlit.setComponentValue(updatedTask);
+    };
 
-  return (
-    <>
-      <FrappeGantt
-        tasks={tasks}
-        on_update_task={on_update_task}
-      />
-    </>
-  );
+    const ClickedTaskForm = (): JSX.Element | null => {
+        const onSubmit = (updatedTask: TaskInterface): void => {
+            setClickedTask(null);
+            onUpdateTask(updatedTask);
+        };
+
+        if (clickedTask) {
+            return <TaskForm task={clickedTask} onSubmit={onSubmit} />;
+        } else {
+            return null;
+        }
+    };
+
+    return (
+        <>
+            <FrappeGantt
+                tasks={tasks}
+                onClickTask={setClickedTask}
+                onUpdateTask={onUpdateTask}
+            />
+            <ClickedTaskForm />
+        </>
+    );
 };
 
 export default withStreamlitConnection(GanttComponent);
